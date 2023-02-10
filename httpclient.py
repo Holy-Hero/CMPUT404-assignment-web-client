@@ -24,16 +24,19 @@ import re
 # you may use urllib to encode data appropriately
 import urllib.parse
 
+
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
+
 
 class HTTPResponse(object):
     def __init__(self, code=200, body=""):
         self.code = code
         self.body = body
 
+
 class HTTPClient(object):
-    #def get_host_port(self,url):
+    # def get_host_port(self,url):
 
     def connect(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,17 +44,34 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return None
+        return data.split(" ")[1]
 
-    def get_headers(self,data):
-        return None
+    def get_headers(self, data, type):
+        request = ""
+        if type == "GET":
+            request = f"GET {data[0]} HTTP/1.1\r\n" \
+                      f"Host: {data[1]}\r\n" \
+                      f"Connection: close\r\n"
+            if data[3] != None:
+                request += urllib.parse.urlencode(data[3])
+        elif type == "POST":
+            request = f"POST {data[0]} HTTP/1.1\r\n" \
+                      f"Host: {data[1]}\r\n" \
+                      f"Connection: close\r\n" \
+                      f"Content-Type: application/x-www-form-urlencoded\r\n"
+            if data[3] != None:
+                args = urllib.parse.urlencode(data[3])
+                request += f"Content-Length: {len(args)}\r\n\r\n{args}"
+            else:
+                request += "Content-Length: 0\r\n\r\n"
+        return request
 
     def get_body(self, data):
-        return None
-    
+        return data.split("\r\n"[-1])
+
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
-        
+
     def close(self):
         self.socket.close()
 
@@ -67,22 +87,63 @@ class HTTPClient(object):
                 done = not part
         return buffer.decode('utf-8')
 
+    def parseURL(self, url):
+        pUrl = urllib.parse.urlparse(url)
+        if pUrl.path == "":
+            path = "/"
+        else:
+            path = pUrl.path
+        if pUrl.hostname == None:
+            host = "localhost"
+        else:
+            host = pUrl.hostname
+        if pUrl.port == None:
+            port = 80
+        else:
+            port = pUrl.port
+        return [path, host, port]
+
     def GET(self, url, args=None):
-        code = 500
-        body = ""
-        return HTTPResponse(code, body)
+        # Parse URL
+        data = self.parseURL(url)
+        data.append(args)
+
+        # Create request
+        request = self.get_headers(data, "GET")
+
+        # Server stuff
+        self.connect(data[1], data[2])
+        self.sendall(request)
+        res = self.recvall(self.socket)
+        self.close()
+
+        # Return response
+        return HTTPResponse(self.get_code(res), self.get_body(res))
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
-        return HTTPResponse(code, body)
+        # Parse URL
+        data = self.parseURL(url)
+        data.append(args)
+
+        # Create request
+        request = self.get_headers(data, "POST")
+
+        # Server stuff
+        self.connect(data[1], data[2])
+        self.sendall(request)
+        res = self.recvall(self.socket)
+        self.close()
+
+        # Return response
+        return HTTPResponse(self.get_code(res), self.get_body(res))
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
-            return self.POST( url, args )
+            return self.POST(url, args)
         else:
-            return self.GET( url, args )
-    
+            return self.GET(url, args)
+
+
 if __name__ == "__main__":
     client = HTTPClient()
     command = "GET"
@@ -90,6 +151,6 @@ if __name__ == "__main__":
         help()
         sys.exit(1)
     elif (len(sys.argv) == 3):
-        print(client.command( sys.argv[2], sys.argv[1] ))
+        print(client.command(sys.argv[2], sys.argv[1]))
     else:
-        print(client.command( sys.argv[1] ))
+        print(client.command(sys.argv[1]))
