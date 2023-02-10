@@ -47,18 +47,7 @@ class HTTPClient(object):
         return data.split(" ")[1]
 
     def get_headers(self, data, type):
-        request = ""
-        if type == "POST":
-            request = f"POST {data[0]} HTTP/1.1\r\n" \
-                      f"Host: {data[1]}\r\n" \
-                      f"Connection: close\r\n" \
-                      f"Content-Type: application/x-www-form-urlencoded\r\n"
-            if data[3] != None:
-                args = urllib.parse.urlencode(data[3])
-                request += f"Content-Length: {len(args)}\r\n\r\n {args}"
-            else:
-                request += "Content-Length: 0\r\n\r\n"
-        return request
+        return None
 
     def get_body(self, data):
         return data.split("\r\n"[-1])
@@ -117,10 +106,14 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         # Parse URL
         data = self.parseURL(url)
-        data.append(args)
 
         # Create request
-        request = self.get_headers(data, "POST")
+        request = request = f"POST {data[0]} HTTP/1.1\r\nHost: {data[1]}\r\nConnection: close\r\nContent-Type: application/x-www-form-urlencoded\r\n"
+        if data[3] != None:
+            argsEncode = urllib.parse.urlencode(args)
+            request += f"Content-Length: {len(argsEncode)}\r\n\r\n {argsEncode}"
+        else:
+            request += "Content-Length: 0\r\n\r\n"
 
         # Server stuff
         self.connect(data[1], data[2])
