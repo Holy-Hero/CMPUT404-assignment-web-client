@@ -105,7 +105,6 @@ class HTTPClient(object):
         request = f"GET {data[0]} HTTP/1.1\r\nHost: {data[1]}\r\nConnection: close\r\n\r\n"
         if args != None:
             request += urllib.parse.urlencode(args)
-
         # Server stuff
         self.connect(data[1], data[2])
         self.sendall(request)
