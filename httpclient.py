@@ -48,20 +48,14 @@ class HTTPClient(object):
 
     def get_headers(self, data, type):
         request = ""
-        if type == "GET":
-            request = f"GET {data[0]} HTTP/1.1\r\n" \
-                      f"Host: {data[1]}\r\n" \
-                      f"Connection: close\r\n"
-            if data[3] != None:
-                request += urllib.parse.urlencode(data[3])
-        elif type == "POST":
+        if type == "POST":
             request = f"POST {data[0]} HTTP/1.1\r\n" \
                       f"Host: {data[1]}\r\n" \
                       f"Connection: close\r\n" \
                       f"Content-Type: application/x-www-form-urlencoded\r\n"
             if data[3] != None:
                 args = urllib.parse.urlencode(data[3])
-                request += f"Content-Length: {len(args)}\r\n\r\n{args}"
+                request += f"Content-Length: {len(args)}\r\n\r\n {args}"
             else:
                 request += "Content-Length: 0\r\n\r\n"
         return request
@@ -106,19 +100,20 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         # Parse URL
         data = self.parseURL(url)
-        data.append(args)
 
         # Create request
-        request = self.get_headers(data, "GET")
+        request = f"GET {data[0]} HTTP/1.1\r\nHost: {data[1]}\r\nConnection: close\r\n\r\n"
+        if args != None:
+            request += urllib.parse.urlencode(args)
 
         # Server stuff
         self.connect(data[1], data[2])
         self.sendall(request)
         res = self.recvall(self.socket)
         self.close()
-
+        print(self.get_code(res))
         # Return response
-        return HTTPResponse(self.get_code(res), self.get_body(res))
+        return HTTPResponse(self.get_code(res).rstrip(), self.get_body(res))
 
     def POST(self, url, args=None):
         # Parse URL
