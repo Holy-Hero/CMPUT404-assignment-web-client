@@ -44,13 +44,13 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return data.split(" ")[1]
+        return int(data.split(" ")[1])
 
     def get_headers(self, data, type):
         return None
 
     def get_body(self, data):
-        return data.split("\r\n"[-1])
+        return data.split("\r\n\r\n")[-1]
 
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -99,9 +99,8 @@ class HTTPClient(object):
         self.sendall(request)
         res = self.recvall(self.socket)
         self.close()
-        print(self.get_code(res))
         # Return response
-        return HTTPResponse(self.get_code(res).rstrip(), self.get_body(res))
+        return HTTPResponse(self.get_code(res), self.get_body(res))
 
     def POST(self, url, args=None):
         # Parse URL
@@ -109,9 +108,9 @@ class HTTPClient(object):
 
         # Create request
         request = request = f"POST {data[0]} HTTP/1.1\r\nHost: {data[1]}\r\nConnection: close\r\nContent-Type: application/x-www-form-urlencoded\r\n"
-        if data[3] != None:
+        if args != None:
             argsEncode = urllib.parse.urlencode(args)
-            request += f"Content-Length: {len(argsEncode)}\r\n\r\n {argsEncode}"
+            request += f"Content-Length: {len(argsEncode)}\r\n\r\n{argsEncode}"
         else:
             request += "Content-Length: 0\r\n\r\n"
 
